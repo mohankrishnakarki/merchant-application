@@ -1,0 +1,19 @@
+export enum Role {
+  ADMIN = 'ADMIN',
+  REVIEWER = 'REVIEWER',
+  SALES = 'SALES',
+}
+export enum ApplicationStatus {
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  INFO_REQUESTED = 'INFO_REQUESTED',
+}
+export enum RiskStatus {
+  PENDING = 'PENDING',
+  PASSED = 'PASSED',
+  FAILED = 'FAILED',
+  MANUAL_REVIEW = 'MANUAL_REVIEW',
+}
