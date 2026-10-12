@@ -51,7 +51,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
 
-      MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/merchant_payments?authSource=admin
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${Mer?authSource=admin
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
