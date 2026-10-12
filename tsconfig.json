@@ -1,27 +1,25 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "moduleResolution": "node",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "allowJs": true,
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
+    "baseUrl": ".",
     "paths": {
       "@core/*": ["./src/core/*"],
       "@infrastructure/*": ["./src/infrastructure/*"],
-      "@modules/*": ["./src/modules/*"]
+      "@modules/*": ["./src/modules/*"],
+      "@common/*": ["./src/common/*"]
     },
     "types": ["jest", "node"],
-    "incremental": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "strict": true,
+    "strictPropertyInitialization": false ,
   }
 }

@@ -5,8 +5,15 @@ import { AuthModule } from '@modules/auth/auth.module';
 import { UsersModule } from '@modules/users/users.module';
 import { ApplicationsModule } from '@modules/applications/applications.module';
 import { RiskReviewModule } from '@modules/risk-review/risk-review.module';
-
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { SanitizeResponseInterceptor } from '@core/interceptors/sanitize-response.interceptor';
 @Module({
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: SanitizeResponseInterceptor,
+    },
+  ],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     InfrastructureModule,

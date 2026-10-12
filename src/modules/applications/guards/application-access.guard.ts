@@ -1,12 +1,12 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MerchantApplication } from '@modules/applications/entities/merchant-application.entity';
+import { MerchantApplicationEntity } from '@modules/applications/entities/merchant-application.entity';
 import { Role } from '@core/enums/roles.enum';
 
 @Injectable()
 export class ApplicationAccessGuard implements CanActivate {
-  constructor(@InjectRepository(MerchantApplication) private repo: Repository<MerchantApplication>) {}
+  constructor(@InjectRepository(MerchantApplicationEntity) private repo: Repository<MerchantApplicationEntity>) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();

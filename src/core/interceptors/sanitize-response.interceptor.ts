@@ -1,27 +1,51 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+} from '@nestjs/common';
+
+import { Reflector } from '@nestjs/core';
+
+import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+
+import {
+  SensitiveDataUtil,
+  SanitizationMode,
+} from '@core/utils/sensitive-data.util';
+
+import {
+  ALLOW_AUTH_TOKENS_KEY,
+} from '@core/decorators/allow-auth-tokens.decorator';
 
 @Injectable()
 export class SanitizeResponseInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler) {
-    return next.handle().pipe(map(data => this.redact(data)));
-  }
+  constructor(
+    private readonly reflector: Reflector,
+  ) {}
 
-  private redact(obj: any): any {
-    if (!obj || typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) return obj.map(i => this.redact(i));
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<unknown> {
+    const allowAuthTokens =
+      this.reflector.getAllAndOverride<boolean>(
+        ALLOW_AUTH_TOKENS_KEY,
+        [
+          context.getHandler(),
+          context.getClass(),
+        ],
+      ) ?? false;
 
-    const redacted = { ...obj };
-    // Requirement E: Do not log or expose passwords, tokens, or raw secrets.
-    const sensitiveKeys = ['password', 'passwordhash', 'token', 'taxid', 'ssn', 'secret'];
-    
-    for (const key of Object.keys(redacted)) {
-      if (sensitiveKeys.some(s => key.toLowerCase().includes(s))) {
-        redacted[key] = '[REDACTED]';
-      } else if (typeof redacted[key] === 'object') {
-        redacted[key] = this.redact(redacted[key]);
-      }
-    }
-    return redacted;
+    return next.handle().pipe(
+      map((data) =>
+        SensitiveDataUtil.sanitize(
+          data,
+          SanitizationMode.RESPONSE,
+          allowAuthTokens,
+        ),
+      ),
+    );
   }
 }
