@@ -38,6 +38,14 @@ import { RolesGuard } from '@core/guards/roles.guard';
 import { Role } from '@core/enums/roles.enum';
 import { ApplicationStatus } from '@core/enums/application-status.enum';
 import { RiskStatus } from '@core/enums/risk-status.enum';
+import {
+  buildCreateApplicationDto,
+  buildTestApplication,
+  buildTestId,
+  buildTestUser,
+  TestApplication,
+  TestUser,
+} from './factories/test-data.factory';
 
 describe('Applications Integration (e2e)', () => {
   let app: INestApplication;
@@ -46,39 +54,17 @@ describe('Applications Integration (e2e)', () => {
   // TEST IDENTIFIERS
   // ==========================================
 
-  const applicationId = '6031bb72-2aff-472d-aa74-f04e19276a89';
-
-  const salesId = '6031bb72-2aff-472d-aa74-f04e19276a90';
-
-  const reviewerId = '6031bb72-2aff-472d-aa74-f04e19276a91';
-
-  const adminId = '6031bb72-2aff-472d-aa74-f04e19276a92';
+  const applicationId = buildTestId();
 
   // ==========================================
   // TEST USERS
   // ==========================================
 
   const users = {
-    sales: {
-      id: salesId,
-      email: 'sales@example.com',
-      role: Role.SALES,
-    },
-
-    reviewer: {
-      id: reviewerId,
-      email: 'reviewer@example.com',
-      role: Role.REVIEWER,
-    },
-
-    admin: {
-      id: adminId,
-      email: 'admin@example.com',
-      role: Role.ADMIN,
-    },
+    sales: buildTestUser({ role: Role.SALES }),
+    reviewer: buildTestUser({ role: Role.REVIEWER }),
+    admin: buildTestUser({ role: Role.ADMIN }),
   };
-
-  type TestUser = (typeof users)[keyof typeof users];
 
   let currentUser: TestUser = users.sales;
 
@@ -86,45 +72,21 @@ describe('Applications Integration (e2e)', () => {
   // VALID CREATE APPLICATION DTO
   // ==========================================
 
-  const createApplicationDto = {
-    businessName: 'ABC Trading',
-
-    legalBusinessName: 'ABC Trading Pvt. Ltd.',
-
-    businessType: 'RETAIL',
-
-    ownerName: 'John Doe',
-
-    contactEmail: 'john@example.com',
-
-    contactPhone: '+9779841234567',
-
-    estimatedMonthlyVolume: 500000.5,
-  };
+  const createApplicationDto = buildCreateApplicationDto();
 
   // ==========================================
   // APPLICATION FACTORY
   // ==========================================
 
   const buildApplication = (
-    overrides: Record<string, unknown> = {},
-  ) => ({
-    id: applicationId,
-
-    ...createApplicationDto,
-
-    createdById: salesId,
-
-    assignedReviewerId: null,
-
-    status: ApplicationStatus.DRAFT,
-
-    riskStatus: RiskStatus.PENDING,
-
-    version: 1,
-
-    ...overrides,
-  });
+    overrides: Partial<TestApplication> = {},
+  ): TestApplication =>
+    buildTestApplication({
+      id: applicationId,
+      ...createApplicationDto,
+      createdById: users.sales.id,
+      ...overrides,
+    });
 
   let storedApplication = buildApplication();
 
@@ -330,8 +292,7 @@ describe('Applications Integration (e2e)', () => {
     });
 
     mockUserRepository.findOne.mockResolvedValue({
-      id: reviewerId,
-
+      id: users.reviewer.id,
       role: Role.REVIEWER,
     });
 
@@ -403,7 +364,7 @@ describe('Applications Integration (e2e)', () => {
         ApplicationStatus.DRAFT,
       );
 
-      expect(response.body.createdById).toBe(salesId);
+      expect(response.body.createdById).toBe(users.sales.id);
 
       expect(
         mockApplicationRepository.save,
@@ -418,7 +379,7 @@ describe('Applications Integration (e2e)', () => {
 
         applicationId,
 
-        salesId,
+        users.sales.id,
 
         expect.any(Object),
       );
@@ -437,7 +398,7 @@ describe('Applications Integration (e2e)', () => {
         ApplicationStatus.DRAFT,
       );
 
-      expect(response.body.createdById).toBe(adminId);
+      expect(response.body.createdById).toBe(users.admin.id);
 
       expect(
         mockApplicationRepository.save,
@@ -468,7 +429,7 @@ describe('Applications Integration (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post('/applications')
         .send({
-          businessName: 'ABC Trading',
+          businessName: createApplicationDto.businessName,
         });
 
       assertStatus(response, 400);
@@ -604,7 +565,7 @@ describe('Applications Integration (e2e)', () => {
         'app.createdById = :userId',
 
         {
-          userId: salesId,
+          userId: users.sales.id,
         },
       );
     });
@@ -829,7 +790,7 @@ describe('Applications Integration (e2e)', () => {
 
         applicationId,
 
-        salesId,
+        users.sales.id,
 
         expect.any(Object),
       );
@@ -871,13 +832,13 @@ describe('Applications Integration (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post(`/applications/${applicationId}/assign`)
         .send({
-          reviewerId,
+          reviewerId: users.reviewer.id,
         });
 
       assertStatus(response, 201);
 
       expect(response.body.assignedReviewerId).toBe(
-        reviewerId,
+        users.reviewer.id,
       );
 
       expect(response.body.status).toBe(
@@ -893,7 +854,7 @@ describe('Applications Integration (e2e)', () => {
 
         applicationId,
 
-        adminId,
+        users.admin.id,
 
         expect.any(Object),
       );
@@ -911,7 +872,7 @@ describe('Applications Integration (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post(`/applications/${applicationId}/assign`)
         .send({
-          reviewerId,
+          reviewerId: users.reviewer.id,
         });
 
       assertStatus(response, 400);
@@ -935,13 +896,13 @@ describe('Applications Integration (e2e)', () => {
       storedApplication = buildApplication({
         status: ApplicationStatus.UNDER_REVIEW,
 
-        assignedReviewerId: reviewerId,
+        assignedReviewerId: users.reviewer.id,
       });
 
       const response = await request(app.getHttpServer())
         .post(`/applications/${applicationId}/assign`)
         .send({
-          reviewerId,
+          reviewerId: users.reviewer.id,
         });
 
       assertStatus(response, 409);
@@ -953,7 +914,7 @@ describe('Applications Integration (e2e)', () => {
       const response = await request(app.getHttpServer())
         .post(`/applications/${applicationId}/assign`)
         .send({
-          reviewerId,
+          reviewerId: users.reviewer.id,
         });
 
       assertStatus(response, 403);
@@ -971,7 +932,7 @@ describe('Applications Integration (e2e)', () => {
       storedApplication = buildApplication({
         status: ApplicationStatus.UNDER_REVIEW,
 
-        assignedReviewerId: reviewerId,
+        assignedReviewerId: users.reviewer.id,
 
         riskStatus: RiskStatus.COMPLETED,
       });
@@ -997,7 +958,7 @@ describe('Applications Integration (e2e)', () => {
 
         applicationId,
 
-        reviewerId,
+        users.reviewer.id,
 
         expect.any(Object),
       );
@@ -1009,7 +970,7 @@ describe('Applications Integration (e2e)', () => {
       storedApplication = buildApplication({
         status: ApplicationStatus.UNDER_REVIEW,
 
-        assignedReviewerId: reviewerId,
+        assignedReviewerId: users.reviewer.id,
 
         riskStatus: RiskStatus.COMPLETED,
       });
@@ -1029,7 +990,7 @@ describe('Applications Integration (e2e)', () => {
       storedApplication = buildApplication({
         status: ApplicationStatus.UNDER_REVIEW,
 
-        assignedReviewerId: reviewerId,
+        assignedReviewerId: users.reviewer.id,
 
         riskStatus: RiskStatus.COMPLETED,
       });
@@ -1051,7 +1012,7 @@ describe('Applications Integration (e2e)', () => {
       storedApplication = buildApplication({
         status: ApplicationStatus.UNDER_REVIEW,
 
-        assignedReviewerId: reviewerId,
+        assignedReviewerId: users.reviewer.id,
 
         riskStatus: RiskStatus.PENDING,
       });

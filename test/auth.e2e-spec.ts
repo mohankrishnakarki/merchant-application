@@ -26,6 +26,11 @@ import { AuthService } from '../src/modules/auth/auth.service';
 import { UsersService } from '../src/modules/users/users.service';
 import { User } from '../src/modules/users/entities/user.entity';
 import { Role } from '../src/core/enums/roles.enum';
+import {
+  buildTestCredentials,
+  buildTestId,
+  buildTestUser,
+} from './factories/test-data.factory';
 
 type FindOneMock = (
   options: unknown,
@@ -35,12 +40,14 @@ describe('Auth Integration (e2e)', () => {
   let app: INestApplication;
   let jwtService: JwtService;
 
-  const userId = '6031bb72-2aff-472d-aa74-f04e19276a89';
+  const userId = buildTestId();
 
-  const validCredentials = {
-    email: 'sales@example.com',
-    password: 'SecurePassword123!',
-  };
+  const validCredentials = buildTestCredentials();
+  const unknownUserCredentials = buildTestCredentials();
+  const incorrectPasswordCredentials = buildTestCredentials({
+    email: validCredentials.email,
+    password: 'WrongPassword123!',
+  });
 
   const mockUserRepository = {
     findOne: jest.fn<FindOneMock>(),
@@ -54,12 +61,12 @@ describe('Auth Integration (e2e)', () => {
       10,
     );
 
-    testUser = {
+    testUser = buildTestUser({
       id: userId,
       email: validCredentials.email,
       role: Role.SALES,
       passwordHash,
-    } as User;
+    });
 
     const moduleFixture: TestingModule =
       await Test.createTestingModule({
@@ -182,10 +189,7 @@ describe('Auth Integration (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
-        .send({
-          email: 'unknown@example.com',
-          password: 'SomePassword123!',
-        })
+        .send(unknownUserCredentials)
         .expect(401);
 
       expect(response.body.message).toBe(
@@ -200,10 +204,7 @@ describe('Auth Integration (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
-        .send({
-          email: validCredentials.email,
-          password: 'WrongPassword123!',
-        })
+        .send(incorrectPasswordCredentials)
         .expect(401);
 
       expect(response.body.message).toBe(
@@ -220,10 +221,7 @@ describe('Auth Integration (e2e)', () => {
         app.getHttpServer(),
       )
         .post('/auth/login')
-        .send({
-          email: 'unknown@example.com',
-          password: 'SomePassword123!',
-        })
+        .send(unknownUserCredentials)
         .expect(401);
 
       mockUserRepository.findOne.mockResolvedValue(testUser);
@@ -232,10 +230,7 @@ describe('Auth Integration (e2e)', () => {
         app.getHttpServer(),
       )
         .post('/auth/login')
-        .send({
-          email: validCredentials.email,
-          password: 'WrongPassword123!',
-        })
+        .send(incorrectPasswordCredentials)
         .expect(401);
 
       expect(unknownUserResponse.body.message).toBe(

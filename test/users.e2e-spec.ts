@@ -17,6 +17,11 @@ import { UsersService } from '@modules/users/users.service';
 import { User } from '@modules/users/entities/user.entity';
 import { CreateUserDto } from '@modules/users/dto/create-user.dto';
 import { Role } from '@core/enums/roles.enum';
+import {
+  buildCreateUserDto,
+  buildTestId,
+  buildTestUser,
+} from './factories/test-data.factory';
 
 // Test-only controller exposing the UsersService through HTTP.
 // Replace with your real UsersController if one exists.
@@ -43,20 +48,16 @@ class TestUsersController {
 describe('Users Integration (e2e)', () => {
   let app: INestApplication;
 
-  const userId = '6031bb72-2aff-472d-aa74-f04e19276a89';
+  const userId = buildTestId();
 
-  const createUserDto: CreateUserDto = {
-    email: 'sales@example.com',
-    password: 'StrongPassword123!',
-    role: Role.SALES,
-  };
+  const createUserDto: CreateUserDto = buildCreateUserDto();
 
-  const existingUser = {
+  const existingUser = buildTestUser({
     id: userId,
     email: createUserDto.email,
     role: Role.SALES,
     passwordHash: '$2b$10$existingPasswordHash',
-  };
+  });
 
   const mockUserRepository = {
     findOne: jest.fn<(...args: any[]) => Promise<any>>(),
@@ -190,7 +191,7 @@ describe('Users Integration (e2e)', () => {
       await request(app.getHttpServer())
         .post('/users')
         .send({
-          email: 'sales@example.com',
+          email: createUserDto.email,
           role: Role.SALES,
         })
         .expect(400);
@@ -240,15 +241,15 @@ describe('Users Integration (e2e)', () => {
       mockUserRepository.findOne.mockResolvedValue(existingUser);
 
       const response = await request(app.getHttpServer())
-        .get('/users/email/sales@example.com')
+        .get(`/users/email/${createUserDto.email}`)
         .expect(200);
 
       expect(response.body.id).toBe(userId);
-      expect(response.body.email).toBe('sales@example.com');
+      expect(response.body.email).toBe(createUserDto.email);
 
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
         where: {
-          email: 'sales@example.com',
+          email: createUserDto.email,
         },
       });
     });
@@ -257,7 +258,7 @@ describe('Users Integration (e2e)', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       const response = await request(app.getHttpServer())
-        .get('/users/email/unknown@example.com')
+        .get(`/users/email/${buildTestUser().email}`)
         .expect(200);
 
       // NestJS serializes a null HTTP response as an empty body.
